@@ -1,5 +1,10 @@
 
-![Uploading screencapture-localhost-8501-2026-03-01-14_22_34.png…]()
+
+<img width="2880" height="2104" alt="screencapture-localhost-8501-2026-03-01-14_22_34" src="https://github.com/user-attachments/assets/e12dc045-60c1-495b-96d6-d1bccfad22b5" />
+
+<img width="505" height="673" alt="スクリーンショット 2026-03-02 20 19 53" src="https://github.com/user-attachments/assets/44dd1202-5172-4ac9-bdc1-be0c2cacf423" />
+
+<img width="477" height="645" alt="スクリーンショット 2026-03-02 20 20 03" src="https://github.com/user-attachments/assets/0b83340b-c3e6-4cd4-b2be-31b76241a3d3" />
 
 
 🧶 AIあみぐるみ作家 (AI Amigurumi Artist)
