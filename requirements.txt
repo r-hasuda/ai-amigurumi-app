@@ -1,0 +1,6 @@
+streamlit
+google-genai
+huggingface-hub
+python-dotenv
+Pillow
+reportlab
