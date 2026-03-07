@@ -19,6 +19,7 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 
+st.set_page_config(page_title="AIあみぐるみ作家")
 # --- ページ設定 ---
 st.set_page_config(page_title="AIあみぐるみ作家", page_icon="🧶")
 
@@ -204,8 +205,9 @@ def create_styled_pdf(text_content, image_bytes=None):
 
     for line in lines:
         stripped = line.strip()
-        if '|' in stripped:
-            if '---' in stripped: continue
+
+        if not stripped.replace('|', '').replace('-', '').replace(':', '').replace(' ', ''):
+                continue
             table_buffer.append(stripped)
         else:
             if table_buffer:
