@@ -205,8 +205,8 @@ def create_styled_pdf(text_content, image_bytes=None):
 
     for line in lines:
         stripped = line.strip()
-
-        if not stripped.replace('|', '').replace('-', '').replace(':', '').replace(' ', ''):
+        if '|' in stripped:
+            if not stripped.replace('|', '').replace('-', '').replace(':', '').replace(' ', ''):
                 continue
             table_buffer.append(stripped)
         else:
