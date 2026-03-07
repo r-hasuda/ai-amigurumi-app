@@ -19,7 +19,6 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 
-st.set_page_config(page_title="AIあみぐるみ作家")
 # --- ページ設定 ---
 st.set_page_config(page_title="AIあみぐるみ作家", page_icon="🧶")
 
