@@ -43,6 +43,11 @@ st.sidebar.markdown("---")
 st.sidebar.header("⚙️ 設定")
 target_size = st.sidebar.text_input("仕上がりサイズ", "手のひらサイズ")
 
+detail_level = st.sidebar.radio(
+    "難易度・ディテール",
+    ("🔰 シンプル（初心者向け・省略あり）", "🧶 リアル（上級者向け・細部まで再現）")
+)
+
 # アフィリエイトのトラッキングID
 AMAZON_TAG = "hasuda2907-22" 
 RAKUTEN_ID = "5170c30d.12d5cbf7.5170c30e.2b43a087" 
@@ -135,7 +140,13 @@ def register_japanese_font():
     return "Helvetica"
 
 def clean_text_for_pdf(text):
-    return re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', text)
+    # 1. 太字の変換 (**文字** -> <b>文字</b>)
+    text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', text)
+    
+    # 2. 改行タグの修正 (<br> や <br > を <br/> に強制変換)
+    text = re.sub(r'<br\s*/?>', '<br/>', text)
+    
+    return text
 
 def create_styled_pdf(text_content, image_bytes=None):
     buffer = io.BytesIO()
@@ -369,20 +380,32 @@ elif st.session_state.step == 3:
 
     if not st.session_state.pattern_text:
         with st.spinner("編み図を作成中..."):
+
+            # 難易度によってAIへの指示（条件）を変える
+            if "リアル" in detail_level:
+                detail_instruction = """
+                - 画像のディテール（パーツの数、重なり具合、模様など）を絶対に省略せず、写真に忠実に再現してください。
+                - 葉っぱの「葉脈」のような複雑な模様や質感がある場合は、編み込み、表面への引き抜き編み、筋編み、または後からのチェーンステッチ（刺繍）などの具体的な技法を用いて、表現方法を「組み立て方と仕上げ」の項目で詳しく指示してください。
+                - 葉の枚数などの数も、元の写真に合わせて正確に編み図に起こしてください。
+                """
+            else:
+                detail_instruction = "- デフォルメされたシンプルな作りにしてください。複雑なパーツや模様は省略し、初心者向けにアレンジしてください。"
+
             prompt_text = f"""
             あみぐるみ作家として、画像のキャラクターの編み図を作成してください。
 
             【条件】
-            - サイズ: {target_size}で、デフォルメされたシンプルな作りにしてください。
+            - サイズ: {target_size}
+            {detail_instruction}
             - 目のパーツは大きなプラスチックのさし目は使用せず、刺繍または小さなビーズを指定してください。
 
             【出力形式の厳守事項】
-            1. 各パーツ（頭、体、手足など）ごとの編み図は、必ず以下の「3列のMarkdown表形式」で出力してください。それ以外の列は作らないでください。
-            | 段 | 目数 | 編み方・増減 |
-            2. 編み方の記号は（細編み、増、減）など、初心者にも分かりやすく記載してください。
-            3. テーブル以外の説明（必要な材料、各パーツの組み立て方、仕上げなど）は、表に入れないで通常のテキスト（箇条書き）で書いてください。
+            1. 各パーツごとの編み図は、必ず以下の「3列のMarkdown表形式」で出力してください。それ以外の列は作らないでください。
+               | 段 | 目数 | 編み方・増減 |
+            2. 編み方の記号は（細編み、増、減）など、分かりやすく記載してください。
+            3. テーブル以外の説明（必要な材料、各パーツの組み立て方、仕上げなど）は、表に入れないで通常のテキストで書いてください。
             """
-            
+          
             # Geminiエラーハンドリングラッパーを使用
             response = handle_gemini_api_call(
                 client_google.models.generate_content,
