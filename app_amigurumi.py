@@ -233,8 +233,17 @@ FIXED_STYLE = "chibi style, simple round shapes, minimal details, cute, embroide
 
 # STEP 1: 画像アップロードと特徴入力
 if st.session_state.step == 1:
-    st.info("💡 写真からシンプルなあみぐるみのデザインを作成します。")
+    st.info("💡 写真からあみぐるみの編み図を作成します。")
     
+    # 🌟 モード選択ラジオボタンを追加
+    create_mode = st.radio(
+        "🎨 作成モードを選択してください",
+        ("✨ AIにデザインをアレンジしてもらう（イラストや実写向け）", 
+         "🧶 この画像のまま直接編み図を作る（あみぐるみの写真向け）")
+    )
+    
+    st.markdown("---")
+
     # 1. ファイルアップローダー
     file_front = st.file_uploader("写真を選択", type=['jpg', 'png', 'webp'])
 
@@ -242,67 +251,85 @@ if st.session_state.step == 1:
     if file_front:
         st.session_state.input_image = Image.open(file_front)
 
-    # 3. 画像の表示（セッションにある最新の画像を1つだけ表示）
+    # 3. 画像の表示
     if st.session_state.input_image:
         st.image(st.session_state.input_image, caption="選択中の画像", width=250)
 
-    # 4. 特徴入力（保持される）
+    # 4. 特徴入力
     st.session_state.user_feature = st.text_input(
-        "追加の特徴（任意）", 
+        "追加の特徴・こだわり（任意）", 
         value=st.session_state.user_feature,
-        placeholder="例：青い帽子をかぶっている、赤いリボン"
+        placeholder="例：青い帽子をかぶっている、赤いリボンなど"
     )
 
-    # 5. 生成ボタン（画像があれば表示される）
+    # 5. 実行ボタン（モードによって処理を分岐）
     if st.session_state.input_image:
-        if st.button("デザインを生成する", type="primary"):
-            
-            # --- 生成処理開始 ---
-            with st.spinner("安全性を確認中..."):
-                safety_result = check_image_safety(st.session_state.input_image)
-                if not safety_result.get("is_safe", False):
-                    st.error(f"🚫 公開制限: {safety_result.get('reason', '著作権上の懸念があります')}")
-                    st.stop()
-            
-            with st.spinner("AIがデザイン中..."):
-                try:
-                    # Geminiに画像の詳細な分析を依頼する（ここが理想に近づけるカギ）
-                    prompt_gen_task = f"""
-                    Analyze the uploaded image and describe it for an AI image generator.
-                    User's specific request: {st.session_state.user_feature}
-                    
-                    Instructions:
-                    - Focus on the main character's color, shape, and unique facial expressions.
-                    - Style: Amigurumi (Japanese crochet doll), soft yarn texture, handmade look.
-                    - Details: {FIXED_STYLE}
-                    - Output only the English prompt for FLUX.
-                    """
-                    
-                    res_prompt = handle_gemini_api_call(
-                        client_google.models.generate_content,
-                        model=TEXT_MODEL,
-                        contents=[prompt_gen_task, st.session_state.input_image]
-                    )
-                    
-                    # 生成されたプロンプトを確認
-                    final_prompt = res_prompt.text.strip()
-                    
-                    # 画像生成 (text_to_imageを使用)
-                    generated_image = client_hf.text_to_image(
-                        prompt=final_prompt,
-                        model="black-forest-labs/FLUX.1-schnell"
-                    )
-                    
-                    img_byte_arr = io.BytesIO()
-                    generated_image.save(img_byte_arr, format='PNG')
-                    st.session_state.preview_image_bytes = img_byte_arr.getvalue()
-                    st.session_state.uploaded_images = [st.session_state.input_image]
-                    st.session_state.step = 2
-                    st.rerun()
+        
+        # モード1：AIにデザインさせる場合（従来通り）
+        if create_mode == "✨ AIにデザインをアレンジしてもらう（イラストや実写向け）":
+            if st.button("デザインを生成する", type="primary"):
+                with st.spinner("安全性を確認中..."):
+                    safety_result = check_image_safety(st.session_state.input_image)
+                    if not safety_result.get("is_safe", False):
+                        st.error(f"🚫 公開制限: {safety_result.get('reason', '著作権上の懸念があります')}")
+                        st.stop()
+                
+                with st.spinner("AIがデザイン中..."):
+                    try:
+                        prompt_gen_task = f"""
+                        Analyze the uploaded image and describe it for an AI image generator.
+                        User's specific request: {st.session_state.user_feature}
+                        
+                        Instructions:
+                        - Focus on the main character's color, shape, and unique facial expressions.
+                        - Style: Amigurumi (Japanese crochet doll), soft yarn texture, handmade look.
+                        - Details: {FIXED_STYLE}
+                        - Output only the English prompt for FLUX.
+                        """
+                        
+                        res_prompt = handle_gemini_api_call(
+                            client_google.models.generate_content,
+                            model=TEXT_MODEL,
+                            contents=[prompt_gen_task, st.session_state.input_image]
+                        )
+                        
+                        final_prompt = res_prompt.text.strip()
+                        
+                        generated_image = client_hf.text_to_image(
+                            prompt=final_prompt,
+                            model="black-forest-labs/FLUX.1-schnell"
+                        )
+                        
+                        img_byte_arr = io.BytesIO()
+                        generated_image.save(img_byte_arr, format='PNG')
+                        st.session_state.preview_image_bytes = img_byte_arr.getvalue()
+                        st.session_state.uploaded_images = [st.session_state.input_image]
+                        st.session_state.step = 2 # 確認画面へ進む
+                        st.rerun()
 
-                except Exception as e:
-                    st.error(f"画像生成中にエラーが発生しました。しばらく時間をおいてお試しください。")
-                    st.debug(f"Error detail: {e}")
+                    except Exception as e:
+                        st.error(f"画像生成中にエラーが発生しました。しばらく時間をおいてお試しください。")
+                        st.debug(f"Error detail: {e}")
+
+        # モード2：直接編み図を作る場合（新機能！）
+        else:
+            if st.button("このまま編み図を作る", type="primary"):
+                with st.spinner("安全性を確認中..."):
+                    safety_result = check_image_safety(st.session_state.input_image)
+                    if not safety_result.get("is_safe", False):
+                        st.error(f"🚫 公開制限: {safety_result.get('reason', '著作権上の懸念があります')}")
+                        st.stop()
+                
+                # 元画像をそのまま「完成イメージ」として扱うための変換処理
+                img_byte_arr = io.BytesIO()
+                st.session_state.input_image.save(img_byte_arr, format='PNG')
+                st.session_state.preview_image_bytes = img_byte_arr.getvalue()
+                st.session_state.uploaded_images = [st.session_state.input_image]
+                
+                # デザイン確認(STEP 2)を飛ばして、いきなり編み図作成(STEP 3)へ進む
+                st.session_state.step = 3 
+                st.rerun()
+
     else:
         st.warning("👆 まずは写真をアップロードしてください。")
 
